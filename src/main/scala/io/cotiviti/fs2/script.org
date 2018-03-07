@@ -1,0 +1,69 @@
+* Script
+
+-----
+** Stream
+#+BEGIN_SRC scala
+val s = Stream(1,2,3)
+
+println(s.toVector)
+pritnln(s)
+#+END_SRC
+
+-----
+** FS2
+#+BEGIN_SRC scala
+import fs2._
+#+END_SRC
+- Show how the value itself does not change
+- Show repeat to indicate that it can be non-terminating
+-----
+** Effect Types
+Show type signature
+Effects
+#+BEGIN_SRC scala
+import scala.util.Random
+import java.nio.file.Paths
+
+Stream.eval(IO { println("Random") ; Random.nextInt(100) }
+  .repeat
+  .take(100)
+#+END_SRC
+*** map/flatMap
+#+BEGIN_SRC scala
+  .map(c => ((9 * c) / 5) + 32)
+  .map(_.toString)
+#+END_SRC
+*** write to file
+**** Sink
+#+BEGIN_SRC scala
+  def log(header: String): Sink[IO, String] = _
+    .map(i => s"$header$i")
+    .evalMap(s => IO { println(s) })
+  import scala.concurrent.ExecutionContext.Implicits.global
+  .to(log("f> "))
+  .observe(log("<c "))
+#+END_SRC
+**** Pipe
+#+BEGIN_SRC scala
+  .intersperse("\n")
+  .through(text.utf8Encode)
+  .to(io.file.writeAll(Paths.get("/tmp/f"))
+#+END_SRC
+
+** Error handling
+#+BEGIN_SRC scala
+  .evalMap(i => if (i % 13 == 0) {
+    IO.raiseError(new RuntimeException("13s! Oh no!")
+  } else IO.pure(i)
+#+END_SRC
+
+- Open file and show it
+-----
+#+BEGIN_SRC scala
+Stream.bracket(i => IO {
+  println("Open")
+})(
+  use = s,
+  release = _ => IO { println("Closing") }
+)
+#+END_SRC
